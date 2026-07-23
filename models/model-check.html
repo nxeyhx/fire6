@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>TensorFlow.js 모델 확인</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+</head>
+<body>
+  <h1>TensorFlow.js 모델 확인</h1>
+  <p id="status">모델을 불러오는 중입니다.</p>
+  <pre id="result"></pre>
+
+  <script>
+    async function test() {
+      try {
+        const models = {};
+
+        for (const horizon of ["10s", "20s", "30s"]) {
+          models[horizon] = await tf.loadLayersModel(
+            `model_${horizon}/model.json`
+          );
+        }
+
+        const input = tf.zeros([1, 30]);
+        const output = models["10s"].predict(input);
+        const values = await output.data();
+
+        document.getElementById("status").textContent =
+          "세 모델을 정상적으로 불러왔습니다.";
+
+        document.getElementById("result").textContent =
+          "10초 모델 출력 개수: " + values.length +
+          "\n첫 번째 예측값: " + values[0];
+      } catch (error) {
+        document.getElementById("status").textContent = "모델 확인 실패";
+        document.getElementById("result").textContent =
+          error.stack || error.message;
+      }
+    }
+
+    test();
+  </script>
+</body>
+</html>

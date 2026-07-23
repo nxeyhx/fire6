@@ -1,0 +1,132 @@
+*{box-sizing:border-box}
+:root{font-family:Arial,"Noto Sans KR",sans-serif;color:#172233;background:#eef2f6}
+body{margin:0}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.appHeader{height:92px;background:#17263a;color:white;padding:16px max(18px,calc((100% - 1560px)/2));display:flex;align-items:center;justify-content:space-between;gap:20px}
+.appHeader h1{font-size:27px;margin:3px 0}
+.appHeader p{margin:0;opacity:.8;font-size:13px}
+.headerStatus{text-align:right}
+.headerStatus strong{display:block;margin-top:7px;font-size:13px}
+.badge{display:inline-block;padding:7px 14px;border-radius:999px;font-weight:900}
+.badge.standby{background:#657487}.badge.live{background:#2eaa70}.badge.warn{background:#dda82e}.badge.error{background:#d44949}
+main{max-width:1560px;margin:auto;padding:12px 16px}
+.mainTabs{display:flex;gap:8px;margin-bottom:10px}
+.mainTab{border:1px solid #c5cfda;background:white;padding:10px 20px;border-radius:10px;font-weight:900}
+.mainTab.active{background:#17263a;color:white;border-color:#17263a}
+.tabPane{display:none}.tabPane.active{display:block}
+.simToolbar,.actualToolbar{background:white;border:1px solid #d8e0e8;border-radius:13px;padding:10px 12px;display:flex;align-items:end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.toolbarGroup{display:flex;align-items:end;gap:7px;flex-wrap:wrap}
+.simToolbar label,.actualToolbar label{font-size:12px;font-weight:800}
+.simToolbar select,.actualToolbar select,.actualToolbar input{display:block;margin-top:4px;border:1px solid #b9c5d1;border-radius:7px;padding:7px 9px;background:white}
+.actualToolbar input{width:min(540px,60vw)}
+.simToolbar button,.actualToolbar button,.smallButton{border:1px solid #b9c5d1;background:white;border-radius:8px;padding:8px 11px;font-weight:800}
+.blueButton{color:#1769cc;border-color:#388be9!important;background:#edf6ff!important}
+.redButton{color:#ad2618;border-color:#e0503c!important;background:#fff1ed!important}
+.primaryButton{background:#ff7848!important;color:white!important;border-color:#ff7848!important}
+.simState{display:grid;grid-template-columns:auto auto;gap:3px 8px;padding:4px 10px;background:#f1f5f8;border-radius:9px;font-size:12px}
+.simState strong{text-align:right}
+.message{margin:8px 0;padding:8px 12px;background:#f3f6f9;border-radius:9px;font-size:13px}
+.message.success{background:#eaf8f1;color:#16643f}.message.error{background:#fff0f0;color:#9c2525}.message.warn{background:#fff7df;color:#765600}
+.simulationWorkspace{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:10px;align-items:start}
+.mapCard,.compactCard{background:white;border:1px solid #d8e0e8;border-radius:13px;padding:10px;box-shadow:0 5px 16px #2233440b}
+.mapHeader,.sectionTitle{display:flex;align-items:start;justify-content:space-between;gap:10px}
+.mapHeader h2,.sectionTitle h3,.compactCard h3{margin:0;font-size:17px}
+.mapHeader p,.sectionTitle p{margin:3px 0 0;color:#677688;font-size:12px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;font-size:11px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px}
+.safe{background:#2eaa70}.watch{background:#ddb02f}.danger{background:#e57d35}.critical{background:#d43d3d}
+.map{position:relative;width:100%;aspect-ratio:16/9;margin-top:7px;overflow:hidden;border-radius:9px;border:1px solid #c7d1dc;background:#eef2f5}
+.map img{position:relative;z-index:1;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none}
+.map svg,.map>div{position:absolute;inset:0;width:100%;height:100%}
+#routeLayer{z-index:3;pointer-events:none}
+#exitLayer{z-index:4;pointer-events:none}
+#sensorLayer{z-index:7;pointer-events:none}
+#specialLayer{z-index:10;pointer-events:none}
+.sensorMarker{position:absolute;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;border:2px solid white;color:white;padding:0;font-size:10px;font-weight:900;pointer-events:auto;box-shadow:0 1px 5px #0006}
+.selectionActive .sensorMarker{cursor:crosshair;animation:selectPulse 1s infinite}
+@keyframes selectPulse{50%{box-shadow:0 0 0 6px #ffffff88,0 0 13px #3b93ff}}
+.exitMarker{position:absolute;transform:translate(-50%,-50%);padding:5px 7px;border-radius:6px;background:#166044;color:white;border:2px solid white;font-weight:900;font-size:11px}
+.exitMarker.recommended{outline:5px solid #ffe36b}
+.routeLine{fill:none;stroke:#156fd8;stroke-width:.85;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 1px white)}
+.specialMarker{position:absolute;transform:translate(-50%,-100%);text-align:center;filter:drop-shadow(0 4px 4px #0007)}
+.fireIcon{font-size:64px;line-height:.8;animation:firePulse .7s alternate infinite}
+@keyframes firePulse{to{transform:scale(1.1) rotate(2deg)}}
+.locationPin{width:42px;height:42px;margin:auto;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1778e8;border:4px solid white}
+.locationPin:after{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:white;left:11px;top:11px}
+.markerLabel{white-space:nowrap;color:white;font-size:12px;font-weight:900;padding:4px 8px;border-radius:7px;margin-top:1px}
+.fireMarker .markerLabel{background:#bf2c1c}.startMarker .markerLabel{background:#1266c8}
+.routeStrip{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}
+.routeStrip article{background:#f2f5f8;border-radius:8px;padding:7px 9px;min-width:0}
+.routeStrip span,.routeStrip strong,.routeStrip small{display:block}
+.routeStrip span{font-size:11px;color:#667586}.routeStrip strong{font-size:18px;color:#db5536;margin:2px 0}.routeStrip small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.dashboardRail{display:grid;gap:8px}
+.statusGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.statusGrid article,.aiGrid article,.actualSummaryGrid article{background:#f2f5f8;border-radius:8px;padding:8px}
+.statusGrid span,.statusGrid strong,.aiGrid span,.aiGrid strong,.actualSummaryGrid span,.actualSummaryGrid strong{display:block}
+.statusGrid span,.aiGrid span,.actualSummaryGrid span{font-size:10px;color:#687789}
+.statusGrid strong{font-size:18px;margin-top:3px}
+.sensorValueGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:7px}
+.sensorValue{border-top:4px solid #2eaa70;background:#f2f5f8;border-radius:6px;padding:4px;text-align:center;min-height:38px}
+.sensorValue strong,.sensorValue span{display:block}.sensorValue strong{font-size:11px}.sensorValue span{font-size:11px}
+.aiGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-top:7px}
+.aiGrid strong{font-size:12px;margin-top:2px;word-break:break-all}
+.miniNotice{font-size:10px;line-height:1.45;color:#58687b;margin:7px 0 0;padding:6px 8px;background:#fff7e4;border-left:4px solid #e6b33a}
+.smallButton{padding:5px 8px;font-size:11px}
+.actualWorkspace{display:grid;grid-template-columns:320px minmax(0,1fr);gap:10px;margin-top:8px}
+.actualRail{display:grid;gap:8px}
+.actualSummaryGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.actualSensorGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.actualSensor{border-top:5px solid #2eaa70;background:#f2f5f8;border-radius:8px;text-align:center;padding:10px}
+.actualSensor strong,.actualSensor span,.actualSensor small{display:block}.actualSensor strong{font-size:22px}
+.flameCard{text-align:center}.flameCard span,.flameCard strong,.flameCard small{display:block}.flameCard strong{font-size:26px;margin:5px 0}
+.flameCard.off{border-color:#cbd5df}.flameCard.on{border-color:#dc4533;background:#fff0ec;color:#a3291a}
+.noteCard p{margin:5px 0 0;font-size:12px;line-height:1.5}
+.actualMap{margin-top:7px;border-radius:9px;overflow:hidden;border:1px solid #c7d1dc}
+.actualMap img{display:block;width:100%;height:auto}
+footer{text-align:center;color:#687789;padding:12px;font-size:11px}
+@media(max-width:1100px){
+  .simulationWorkspace{grid-template-columns:1fr}
+  .dashboardRail{grid-template-columns:1fr 1fr}
+  .actualWorkspace{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+  .appHeader{height:auto;align-items:flex-start;flex-direction:column}
+  .simulationWorkspace,.actualWorkspace{display:block}
+  .dashboardRail{display:grid;grid-template-columns:1fr;margin-top:8px}
+  .routeStrip{grid-template-columns:1fr 1fr}
+  .actualToolbar input{width:100%}
+}
+.actualWorkspace.routeEnabled{grid-template-columns:360px minmax(0,1fr)}
+.actualSummaryGrid{grid-template-columns:1fr 1fr}
+.actualAiGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.actualAiGrid article{background:#f2f5f8;border-radius:8px;padding:8px}
+.actualAiGrid span,.actualAiGrid strong{display:block}
+.actualAiGrid span{font-size:10px;color:#687789}
+.actualAiGrid strong{font-size:12px;margin-top:3px}
+.interactiveActualMap{position:relative;aspect-ratio:16/9}
+.interactiveActualMap img{position:relative;z-index:1;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.interactiveActualMap svg,
+.interactiveActualMap>div{position:absolute;inset:0;width:100%;height:100%}
+#actualRouteLayer{z-index:3;pointer-events:none}
+#actualExitLayer{z-index:4;pointer-events:none}
+#actualPointLayer{z-index:7;pointer-events:none}
+#actualSpecialLayer{z-index:10;pointer-events:none}
+.actualSensorPoint{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;border:3px solid white;color:white;font-weight:900;background:#522385;box-shadow:0 2px 8px #0008;pointer-events:auto;padding:0}
+.actualSensorPoint small{display:block;font-size:8px}
+.actualSensorPoint.selectable{cursor:crosshair;animation:actualSelectPulse 1s infinite}
+@keyframes actualSelectPulse{50%{box-shadow:0 0 0 8px #ffffff88,0 0 16px #2690ff}}
+.actualExitGlow{position:absolute;transform:translate(-50%,-50%);border:3px solid transparent;border-radius:10px;padding:10px 16px;font-weight:900;color:white;background:#187040bb}
+.actualExitGlow.recommended{border-color:#ffe15e;box-shadow:0 0 0 7px #ffe15e55,0 0 18px #ffe15e}
+.actualRouteLine{fill:none;stroke:#00a4ff;stroke-width:1.0;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px white)}
+.actualStartMarker{position:absolute;transform:translate(-50%,-100%);text-align:center;filter:drop-shadow(0 4px 5px #0008)}
+.actualStartPin{width:45px;height:45px;margin:auto;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#1578ea;border:4px solid white}
+.actualStartPin:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:white;left:12px;top:12px}
+.actualFireEstimate{position:absolute;transform:translate(-50%,-100%);text-align:center;filter:drop-shadow(0 4px 5px #0008)}
+.actualFireEstimate .fireIcon{font-size:58px}
+.actualMappingNote{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:8px 10px;background:#f3f6f9;border-radius:8px;font-size:12px}
+.actualMappingNote span{padding:4px 8px;background:white;border-radius:999px;border:1px solid #d4dce5}
+.actualRouteStrip{margin-top:8px}
+@media(max-width:1100px){
+  .actualWorkspace.routeEnabled{grid-template-columns:1fr}
+}

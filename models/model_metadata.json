@@ -1,0 +1,138 @@
+{
+  "format_version": "2.0",
+  "model_format": "TensorFlow.js LayersModel",
+  "load_function": "tf.loadLayersModel",
+  "tensorflow_version": "2.20.0",
+  "input_sensor_order": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14",
+    "S15",
+    "S16",
+    "S17",
+    "S18",
+    "S19",
+    "S20",
+    "S21",
+    "S22",
+    "S23",
+    "S24",
+    "S25",
+    "S26",
+    "S27",
+    "S28",
+    "S29",
+    "S30"
+  ],
+  "output_sensor_order": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14",
+    "S15",
+    "S16",
+    "S17",
+    "S18",
+    "S19",
+    "S20",
+    "S21",
+    "S22",
+    "S23",
+    "S24",
+    "S25",
+    "S26",
+    "S27",
+    "S28",
+    "S29",
+    "S30"
+  ],
+  "input_scale": 100.0,
+  "output_scale": 100.0,
+  "models": {
+    "10s": "model_10s/model.json",
+    "20s": "model_20s/model.json",
+    "30s": "model_30s/model.json"
+  },
+  "evaluation": [
+    {
+      "horizon": "10s",
+      "test_rows": 20,
+      "mae_normalized": 0.116807,
+      "mae_risk_points": 11.681
+    },
+    {
+      "horizon": "20s",
+      "test_rows": 20,
+      "mae_normalized": 0.35458,
+      "mae_risk_points": 35.458
+    },
+    {
+      "horizon": "30s",
+      "test_rows": 20,
+      "mae_normalized": 0.394301,
+      "mae_risk_points": 39.43
+    }
+  ],
+  "conversion_report": {
+    "10s": {
+      "weight_count": 6,
+      "weight_values": 8094,
+      "binary_bytes": 32376,
+      "weight_names": [
+        "dense_1/kernel",
+        "dense_1/bias",
+        "dense_2/kernel",
+        "dense_2/bias",
+        "future_sensor_output/kernel",
+        "future_sensor_output/bias"
+      ]
+    },
+    "20s": {
+      "weight_count": 6,
+      "weight_values": 8094,
+      "binary_bytes": 32376,
+      "weight_names": [
+        "dense_1/kernel",
+        "dense_1/bias",
+        "dense_2/kernel",
+        "dense_2/bias",
+        "future_sensor_output/kernel",
+        "future_sensor_output/bias"
+      ]
+    },
+    "30s": {
+      "weight_count": 6,
+      "weight_values": 8094,
+      "binary_bytes": 32376,
+      "weight_names": [
+        "dense_1/kernel",
+        "dense_1/bias",
+        "dense_2/kernel",
+        "dense_2/bias",
+        "future_sensor_output/kernel",
+        "future_sensor_output/bias"
+      ]
+    }
+  }
+}

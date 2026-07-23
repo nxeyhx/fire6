@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>화재 대피 AI 시뮬레이션 · ESP32 실제 구현</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+</head>
+<body>
+<header class="appHeader">
+  <div>
+    <small>07단계 수정본</small>
+    <h1>화재 대피 AI 대시보드</h1>
+    <p>1초 실시간 시뮬레이션과 ESP32 실제 구현 화면을 분리해 확인합니다.</p>
+  </div>
+  <div class="headerStatus">
+    <span id="globalBadge" class="badge standby">대기</span>
+    <strong id="globalStatusText">위치와 발화 지점을 선택하세요.</strong>
+  </div>
+</header>
+
+<main>
+  <nav class="mainTabs">
+    <button id="tabSimulation" class="mainTab active">시뮬레이션</button>
+    <button id="tabActual" class="mainTab">ESP32 실제 구현</button>
+  </nav>
+
+  <section id="simulationPane" class="tabPane active">
+    <div class="simToolbar">
+      <div class="toolbarGroup">
+        <button id="chooseStart" class="blueButton">📍 내 위치 선택</button>
+        <button id="chooseFire" class="redButton">🔥 발화 위치 선택</button>
+        <button id="clearSelection">위치 초기화</button>
+      </div>
+
+      <div class="toolbarGroup">
+        <label>갱신 간격
+          <select id="simInterval">
+            <option value="1000" selected>1초</option>
+            <option value="2000">2초</option>
+            <option value="3000">3초</option>
+            <option value="5000">5초</option>
+          </select>
+        </label>
+        <label>지도 표시
+          <select id="displayHorizon">
+            <option value="0" selected>현재</option>
+            <option value="10">10초 뒤</option>
+            <option value="20">20초 뒤</option>
+            <option value="30">30초 뒤</option>
+          </select>
+        </label>
+        <button id="pauseSimulation">일시정지</button>
+        <button id="resumeSimulation">계속 실행</button>
+      </div>
+
+      <div class="simState">
+        <span>선택 모드</span>
+        <strong id="selectionMode">일반</strong>
+        <span>경과</span>
+        <strong id="elapsedSeconds">0초</strong>
+      </div>
+    </div>
+
+    <div id="simMessage" class="message">
+      먼저 내 위치와 발화 위치를 지도에서 선택하세요. 두 위치가 선택되면 자동으로 시작합니다.
+    </div>
+
+    <div class="simulationWorkspace">
+      <section class="mapCard">
+        <div class="mapHeader">
+          <div>
+            <h2>1층 실시간 연기 위험도와 대피 경로</h2>
+            <p><b id="mapTimeLabel">현재</b> 위험도 · 복도만 이동</p>
+          </div>
+          <div class="legend">
+            <span><i class="safe"></i>안전</span>
+            <span><i class="watch"></i>주의</span>
+            <span><i class="danger"></i>위험</span>
+            <span><i class="critical"></i>매우 위험</span>
+          </div>
+        </div>
+
+        <div id="simulationMap" class="map">
+          <img src="assets/floor-plan.jpg" alt="시뮬레이션 1층 지도">
+          <svg id="routeLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div id="exitLayer"></div>
+          <div id="sensorLayer"></div>
+          <div id="specialLayer"></div>
+        </div>
+
+        <div class="routeStrip">
+          <article>
+            <span>현재</span>
+            <strong id="routeExit0">대기</strong>
+            <small id="routePath0">위치 선택 전</small>
+          </article>
+          <article>
+            <span>10초 뒤</span>
+            <strong id="routeExit10">대기</strong>
+            <small id="routePath10">위치 선택 전</small>
+          </article>
+          <article>
+            <span>20초 뒤</span>
+            <strong id="routeExit20">대기</strong>
+            <small id="routePath20">위치 선택 전</small>
+          </article>
+          <article>
+            <span>30초 뒤</span>
+            <strong id="routeExit30">대기</strong>
+            <small id="routePath30">위치 선택 전</small>
+          </article>
+        </div>
+      </section>
+
+      <aside class="dashboardRail">
+        <section class="compactCard statusGrid">
+          <article><span>내 위치</span><strong id="startSummary">미선택</strong></article>
+          <article><span>발화 위치</span><strong id="fireSummary">미선택</strong></article>
+          <article><span>추천 출구</span><strong id="exitSummary">대기</strong></article>
+          <article><span>시뮬레이션</span><strong id="runSummary">정지</strong></article>
+        </section>
+
+        <section class="compactCard">
+          <div class="sectionTitle">
+            <div>
+              <h3>S01~S30 위험도</h3>
+              <p id="sensorGridLabel">현재값</p>
+            </div>
+            <button id="downloadCsv" class="smallButton">CSV</button>
+          </div>
+          <div id="sensorValueGrid" class="sensorValueGrid"></div>
+        </section>
+
+        <section class="compactCard">
+          <div class="sectionTitle">
+            <div>
+              <h3>TensorFlow.js 작동 진단</h3>
+              <p>페이지 시작 시 자동 검증</p>
+            </div>
+            <button id="verifyAi" class="smallButton">다시 검증</button>
+          </div>
+          <div class="aiGrid">
+            <article><span>모델 종류</span><strong id="modelSource">확인 중</strong></article>
+            <article><span>TensorFlow.js</span><strong id="tfVersion">확인 중</strong></article>
+            <article><span>검증 결과</span><strong id="verificationStatus">대기</strong></article>
+            <article><span>추론 횟수</span><strong id="inferenceCount">0회</strong></article>
+            <article><span>마지막 추론</span><strong id="lastInference">없음</strong></article>
+            <article><span>예측 변화</span><strong id="predictionDelta">-</strong></article>
+          </div>
+          <p id="aiExplanation" class="miniNotice">
+            학습 모델을 찾지 못하면 TensorFlow.js 내장 시연 모델로 실제 predict()를 실행합니다.
+          </p>
+        </section>
+      </aside>
+    </div>
+  </section>
+
+  <section id="actualPane" class="tabPane">
+    <div class="actualToolbar">
+      <label>Apps Script 웹 앱 주소
+        <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+
+      <label>자동 새로고침
+        <select id="actualInterval">
+          <option value="0">사용 안 함</option>
+          <option value="1000" selected>1초</option>
+          <option value="3000">3초</option>
+          <option value="5000">5초</option>
+          <option value="10000">10초</option>
+        </select>
+      </label>
+
+      <label>지도 표시
+        <select id="actualHorizon">
+          <option value="0" selected>현재</option>
+          <option value="10">10초 뒤</option>
+          <option value="20">20초 뒤</option>
+          <option value="30">30초 뒤</option>
+        </select>
+      </label>
+
+      <button id="chooseActualStart" class="blueButton">📍 내 위치 선택</button>
+      <button id="clearActualStart">내 위치 해제</button>
+      <button id="saveApi">설정 저장</button>
+      <button id="fetchActual" class="primaryButton">지금 데이터 받기</button>
+    </div>
+
+    <div id="actualMessage" class="message">
+      맵의 1~4는 A1~A4와 직접 연결됩니다. F1 감지 후 가장 먼저 반응한 알코올 센서 위치에 불꽃을 고정합니다.
+    </div>
+
+    <div class="actualWorkspace routeEnabled">
+      <aside class="actualRail">
+        <section class="compactCard actualSummaryGrid">
+          <article><span>장치</span><strong id="actualDevice">-</strong></article>
+          <article><span>상태</span><strong id="actualStatus">NO DATA</strong></article>
+          <article><span>내 위치</span><strong id="actualStartSummary">미선택</strong></article>
+          <article><span>추천 출구</span><strong id="actualExitSummary">대기</strong></article>
+          <article><span>데이터 나이</span><strong id="actualAge">-</strong></article>
+          <article><span>불꽃 F1</span><strong id="flameStatus">미감지</strong></article>
+          <article><span>발화 추정</span><strong id="actualIgnitionSummary">대기</strong></article>
+        </section>
+
+        <section class="compactCard">
+          <div class="sectionTitle">
+            <div>
+              <h3>알코올 감지 센서 A1~A4</h3>
+              <p id="actualSensorTimeLabel">현재값</p>
+            </div>
+          </div>
+          <div id="actualSensorGrid" class="actualSensorGrid"></div>
+        </section>
+
+        <section class="compactCard">
+          <div class="sectionTitle">
+            <div>
+              <h3>실제 구현 TensorFlow.js</h3>
+              <p>4개 센서 입력 → 미래 위험도 4개 출력</p>
+            </div>
+          </div>
+          <div class="actualAiGrid">
+            <article><span>모델</span><strong id="actualModelStatus">준비 중</strong></article>
+            <article><span>추론 횟수</span><strong id="actualInferenceCount">0회</strong></article>
+            <article><span>마지막 추론</span><strong id="actualLastInference">없음</strong></article>
+            <article><span>예측 변화</span><strong id="actualPredictionDelta">-</strong></article>
+          </div>
+        </section>
+
+        <section id="flameCard" class="compactCard flameCard off">
+          <span>불꽃 감지 센서 F1</span>
+          <strong id="flameCardText">미감지</strong>
+          <small id="flameTrackingText">F1 감지 후 가장 먼저 반응한 알코올 센서 위치를 발화 지점으로 고정</small>
+        </section>
+      </aside>
+
+      <section class="mapCard actualMapCard">
+        <div class="mapHeader">
+          <div>
+            <h2>ESP32 실제 구현용 실시간 대피 경로</h2>
+            <p>
+              맵 1=A1 · 2=A2 · 3=A3 · 4=A4 ·
+              <b id="actualMapTimeLabel">현재</b> 위험도
+            </p>
+          </div>
+
+          <div class="legend">
+            <span><i class="safe"></i>안전</span>
+            <span><i class="watch"></i>주의</span>
+            <span><i class="danger"></i>위험</span>
+            <span><i class="critical"></i>매우 위험</span>
+          </div>
+        </div>
+
+        <div id="actualMapArea" class="actualMap interactiveActualMap">
+          <img src="assets/actual-floor-test-map.png" alt="ESP32 실제 구현용 지도">
+          <svg id="actualRouteLayer" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <div id="actualExitLayer"></div>
+          <div id="actualPointLayer"></div>
+          <div id="actualSpecialLayer"></div>
+        </div>
+
+        <div class="routeStrip actualRouteStrip">
+          <article>
+            <span>현재</span>
+            <strong id="actualRouteExit0">대기</strong>
+            <small id="actualRoutePath0">내 위치 선택 전</small>
+          </article>
+          <article>
+            <span>10초 뒤</span>
+            <strong id="actualRouteExit10">대기</strong>
+            <small id="actualRoutePath10">내 위치 선택 전</small>
+          </article>
+          <article>
+            <span>20초 뒤</span>
+            <strong id="actualRouteExit20">대기</strong>
+            <small id="actualRoutePath20">내 위치 선택 전</small>
+          </article>
+          <article>
+            <span>30초 뒤</span>
+            <strong id="actualRouteExit30">대기</strong>
+            <small id="actualRoutePath30">내 위치 선택 전</small>
+          </article>
+        </div>
+
+        <div class="actualMappingNote">
+          <b>센서 매칭</b>
+          <span>맵 1 ↔ A1</span>
+          <span>맵 2 ↔ A2</span>
+          <span>맵 3 ↔ A3</span>
+          <span>맵 4 ↔ A4</span>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer>교육용 프로토타입이며 실제 화재 안전 설비로 사용할 수 없습니다.</footer>
+
+<script src="js/simulation-data.js"></script>
+<script src="js/pathfinding.js"></script>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
