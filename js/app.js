@@ -39,8 +39,8 @@ const state={
   actualPreviousRaw:{},
   actualDetectionStartedAt:null,
   actualIgnitionDetectedAt:null,
-  actualAlcoholThreshold:20,
-  actualRiseThreshold:5
+  actualAlcoholThreshold:20, // 수정: 알코올 위험 기준값 (20 이상 주황색)
+  actualRiseThreshold:5      // 수정: 기준값 대비 상승폭
 };
 
 
@@ -84,11 +84,20 @@ const sensorCards={};
 let startMarker=null;
 let fireMarker=null;
 
+// 시뮬레이션용 색상 기준 (그대로 유지)
 function riskColor(value){
   if(value<25)return"#2eaa70";
   if(value<50)return"#ddb02f";
   if(value<80)return"#e57d35";
   return"#d43d3d";
+}
+
+// 수정: 실제 구현 탭 전용 색상 함수 (10미만 안전, 10이상 주의, 20이상 위험, 25이상 매우 위험)
+function actualRiskColor(value){
+  if(value<10)return"#2eaa70"; // 10 미만: 안전 (초록)
+  if(value<20)return"#ddb02f"; // 10 이상 20 미만: 주의 (노랑)
+  if(value<25)return"#e57d35"; // 20 이상 25 미만: 위험 (주황)
+  return"#d43d3d";             // 25 이상: 매우 위험 (빨강)
 }
 
 function setGlobal(status,text){
@@ -964,7 +973,7 @@ function trackFirstAlcoholDetection(currentValues,flame){
           item.step>=3
         )
       ) ||
-      item.value>=35
+      item.value>=25 // 수정: 즉시 발화 인지 기준을 25(매우 위험)로 변경
     );
 
     if(candidates.length){
@@ -1208,11 +1217,11 @@ function renderActual(payload){
     const value=Number(values[id]??actualNumber(payload,id,index));
     const card=$("actual-"+id);
 
-    card.style.borderTopColor=riskColor(value);
+    card.style.borderTopColor=actualRiskColor(value); // 수정: 실제 구현용 색상 함수 적용
     card.querySelector("strong").textContent=value.toFixed(1);
 
     const marker=actualPointMarkers[id];
-    marker.style.background=riskColor(value);
+    marker.style.background=actualRiskColor(value); // 수정: 실제 구현용 색상 함수 적용
     marker.title=`맵 ${index+1} · ${id} · 위험도 ${value.toFixed(1)}`;
   });
 
