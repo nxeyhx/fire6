@@ -92,7 +92,7 @@ function riskColor(value){
   return"#d43d3d";
 }
 
-// 실제 구현 탭 전용 색상 함수 (10미만 안전, 10이상 주의, 20이상 위험, 25이상 매우 위험)
+// 실제 구현 탭 전용 색상 함수
 function actualRiskColor(value){
   if(value<10)return"#2eaa70"; // 안전 (초록)
   if(value<20)return"#ddb02f"; // 주의 (노랑)
@@ -934,7 +934,6 @@ function resetActualIgnitionTracking(currentValues={}){
   state.actualIgnitionDetectedAt=null;
 }
 
-// 수정: 불꽃 감지 시 무조건 A1~A4 중 가장 높은 값을 가진 센서를 발화 위치로 고정
 function trackFirstAlcoholDetection(currentValues,flame){
   const ids=["A1","A2","A3","A4"];
 
@@ -953,7 +952,6 @@ function trackFirstAlcoholDetection(currentValues,flame){
   }
 
   if(!state.actualIgnitionSensor){
-    // A1~A4 중 수치가 가장 높은 센서를 찾아 발화점으로 지정
     let maxId = ids[0];
     let maxValue = -Infinity;
 
@@ -973,26 +971,15 @@ function trackFirstAlcoholDetection(currentValues,flame){
   return state.actualIgnitionSensor;
 }
 
+// 수정: 주변 센서를 45로 끌어올리는 로직 완전 삭제
 function applyActualFlame(values,flame,horizon){
   const result={...values};
   const origin=state.actualIgnitionSensor;
 
   if(!flame||!origin)return result;
 
+  // 발화점만 100으로 설정하고, 나머지 값은 그대로 둡니다.
   result[origin]=100;
-
-  const neighborMap={
-    A1:["A2"],
-    A2:["A1","A3","A4"],
-    A3:["A2"],
-    A4:["A2"]
-  };
-
-  const minimum=horizon===0?45:horizon===10?58:horizon===20?72:85;
-
-  neighborMap[origin].forEach(id=>{
-    result[id]=Math.max(Number(result[id]||0),minimum);
-  });
 
   return result;
 }
@@ -1224,7 +1211,6 @@ function renderActual(payload){
       ?"추적 중"
       :"대기";
 
-  // 수정: UI 안내 문구도 함께 변경
   $("flameTrackingText").textContent=!flame
     ?"F1 미감지: 발화 추적 대기"
     :ignition
@@ -1310,7 +1296,6 @@ async function fetchActualData(){
     state.actualPayload=payload;
     await processActualPayload(payload);
 
-    // 수정: 성공 메시지도 새 추적 기준에 맞게 반영
     setActualMessage(
       state.actualIgnitionSensor
         ?`A1~A4 실제값을 반영했습니다. 가장 수치가 높은 ${state.actualIgnitionSensor}에 불꽃 위치가 고정되었습니다.`
