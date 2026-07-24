@@ -39,8 +39,8 @@ const state={
   actualPreviousRaw:{},
   actualDetectionStartedAt:null,
   actualIgnitionDetectedAt:null,
-  actualAlcoholThreshold:20, // 수정: 알코올 위험 기준값 (20 이상 주황색)
-  actualRiseThreshold:5      // 수정: 기준값 대비 상승폭
+  actualAlcoholThreshold:20,
+  actualRiseThreshold:5
 };
 
 
@@ -84,7 +84,7 @@ const sensorCards={};
 let startMarker=null;
 let fireMarker=null;
 
-// 시뮬레이션용 색상 기준 (그대로 유지)
+// 시뮬레이션용 색상 기준
 function riskColor(value){
   if(value<25)return"#2eaa70";
   if(value<50)return"#ddb02f";
@@ -92,12 +92,12 @@ function riskColor(value){
   return"#d43d3d";
 }
 
-// 수정: 실제 구현 탭 전용 색상 함수 (10미만 안전, 10이상 주의, 20이상 위험, 25이상 매우 위험)
+// 실제 구현 탭 전용 색상 함수 (10미만 안전, 10이상 주의, 20이상 위험, 25이상 매우 위험)
 function actualRiskColor(value){
-  if(value<10)return"#2eaa70"; // 10 미만: 안전 (초록)
-  if(value<20)return"#ddb02f"; // 10 이상 20 미만: 주의 (노랑)
-  if(value<25)return"#e57d35"; // 20 이상 25 미만: 위험 (주황)
-  return"#d43d3d";             // 25 이상: 매우 위험 (빨강)
+  if(value<10)return"#2eaa70"; // 안전 (초록)
+  if(value<20)return"#ddb02f"; // 주의 (노랑)
+  if(value<25)return"#e57d35"; // 위험 (주황)
+  return"#d43d3d";             // 매우 위험 (빨강)
 }
 
 function setGlobal(status,text){
@@ -926,7 +926,6 @@ async function initializeActualModels(){
   $("actualModelStatus").textContent="4센서 추정 모델";
 }
 
-
 function resetActualIgnitionTracking(currentValues={}){
   state.actualFlameWasOn=false;
   state.actualIgnitionSensor=null;
@@ -935,10 +934,9 @@ function resetActualIgnitionTracking(currentValues={}){
   state.actualIgnitionDetectedAt=null;
 }
 
+// 수정: 불꽃 감지 시 무조건 A1~A4 중 가장 높은 값을 가진 센서를 발화 위치로 고정
 function trackFirstAlcoholDetection(currentValues,flame){
   const ids=["A1","A2","A3","A4"];
-  const previous={...state.actualPreviousRaw};
-  const hasPrevious=ids.some(id=>Number.isFinite(Number(previous[id])));
 
   if(!flame){
     resetActualIgnitionTracking(currentValues);
@@ -951,42 +949,24 @@ function trackFirstAlcoholDetection(currentValues,flame){
     state.actualIgnitionSensor=null;
     state.actualDetectionStartedAt=Date.now();
     state.actualIgnitionDetectedAt=null;
-    state.actualFlameBaseline=hasPrevious
-      ?Object.fromEntries(ids.map(id=>[id,Number(previous[id]||0)]))
-      :{...currentValues};
+    state.actualFlameBaseline={...currentValues};
   }
 
   if(!state.actualIgnitionSensor){
-    const candidates=ids.map((id,index)=>{
-      const value=Number(currentValues[id]||0);
-      const baseline=Number(state.actualFlameBaseline[id]||0);
-      const prev=Number(previous[id]??baseline);
-      const rise=value-baseline;
-      const step=value-prev;
+    // A1~A4 중 수치가 가장 높은 센서를 찾아 발화점으로 지정
+    let maxId = ids[0];
+    let maxValue = -Infinity;
 
-      return{id,index,value,baseline,rise,step};
-    }).filter(item=>
-      (
-        item.value>=state.actualAlcoholThreshold &&
-        (
-          item.rise>=state.actualRiseThreshold ||
-          item.step>=3
-        )
-      ) ||
-      item.value>=25 // 수정: 즉시 발화 인지 기준을 25(매우 위험)로 변경
-    );
+    ids.forEach(id => {
+      const val = Number(currentValues[id] || 0);
+      if (val > maxValue) {
+        maxValue = val;
+        maxId = id;
+      }
+    });
 
-    if(candidates.length){
-      candidates.sort((a,b)=>
-        b.step-a.step ||
-        b.rise-a.rise ||
-        b.value-a.value ||
-        a.index-b.index
-      );
-
-      state.actualIgnitionSensor=candidates[0].id;
-      state.actualIgnitionDetectedAt=Date.now();
-    }
+    state.actualIgnitionSensor = maxId;
+    state.actualIgnitionDetectedAt = Date.now();
   }
 
   state.actualPreviousRaw={...currentValues};
@@ -1217,11 +1197,11 @@ function renderActual(payload){
     const value=Number(values[id]??actualNumber(payload,id,index));
     const card=$("actual-"+id);
 
-    card.style.borderTopColor=actualRiskColor(value); // 수정: 실제 구현용 색상 함수 적용
+    card.style.borderTopColor=actualRiskColor(value);
     card.querySelector("strong").textContent=value.toFixed(1);
 
     const marker=actualPointMarkers[id];
-    marker.style.background=actualRiskColor(value); // 수정: 실제 구현용 색상 함수 적용
+    marker.style.background=actualRiskColor(value);
     marker.title=`맵 ${index+1} · ${id} · 위험도 ${value.toFixed(1)}`;
   });
 
@@ -1244,11 +1224,12 @@ function renderActual(payload){
       ?"추적 중"
       :"대기";
 
+  // 수정: UI 안내 문구도 함께 변경
   $("flameTrackingText").textContent=!flame
     ?"F1 미감지: 발화 추적 대기"
     :ignition
-      ?`${ignition}이 가장 먼저 반응하여 불꽃 위치를 고정했습니다.`
-      :`A1~A4 중 최초 반응을 추적 중입니다. 기준 ${state.actualAlcoholThreshold}, 상승 ${state.actualRiseThreshold} 이상`;
+      ?`${ignition}이(가) 가장 높은 수치를 기록하여 불꽃 위치를 고정했습니다.`
+      :`A1~A4 중 가장 높은 수치를 확인 중입니다.`;
 
   $("flameCard").classList.toggle("on",flame);
   $("flameCard").classList.toggle("off",!flame);
@@ -1329,11 +1310,12 @@ async function fetchActualData(){
     state.actualPayload=payload;
     await processActualPayload(payload);
 
+    // 수정: 성공 메시지도 새 추적 기준에 맞게 반영
     setActualMessage(
       state.actualIgnitionSensor
-        ?`A1~A4 실제값을 반영했습니다. 최초 알코올 감지 위치는 ${state.actualIgnitionSensor}으로 고정되었습니다.`
+        ?`A1~A4 실제값을 반영했습니다. 가장 수치가 높은 ${state.actualIgnitionSensor}에 불꽃 위치가 고정되었습니다.`
         :flameDetected(payload)
-          ?"F1이 감지되었습니다. A1~A4 중 가장 먼저 반응하는 센서를 추적 중입니다."
+          ?"F1이 감지되었습니다. A1~A4 중 가장 높은 수치를 가진 센서를 확인 중입니다."
           :"A1~A4 실제값을 받아 TensorFlow 예측과 대피 경로를 갱신했습니다.",
       "success"
     );
